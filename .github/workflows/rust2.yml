@@ -1,8 +1,8 @@
 name: Rust Check
 
 on:
-  push:
-    branches: [ "ultradev" ]
+  pull_request:
+    branches: [ "dev", "main", "ultradev" ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -14,5 +14,5 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Build
+    - name: Cargo Check
       run: cargo check
