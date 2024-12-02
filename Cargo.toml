@@ -11,7 +11,5 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 futures = "0.3.30"
 tracing = "0.1.40"
 libp2p = { version = "0.54.1", features = [ "tokio", "gossipsub", "mdns", "noise", "macros", "tcp", "yamux", "quic"] }
-uuid = { version = "1.10.0", features = ["v8"] }
 rusqlite = { version = "0.32.1", features = ["sqlcipher"] }
 sha3-rust = "0.1.1"
-log = "0.4.22"
