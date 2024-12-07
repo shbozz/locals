@@ -17,19 +17,19 @@ use rusqlite::Connection;
 
 // Open/Create the database and tables for storing data of group chat
 pub fn init_db(access: String, username: &String) -> Connection {
-    let database_exists = std::path::Path::new("simple.txt").exists();
-    let conn = Connection::open(access + ".dat").expect("Err 0011: Failed to open database");
+    let database_exists = std::path::Path::new(&(access.clone() + ".dat")).exists();
+    let conn = Connection::open(access + ".dat").expect("Err 2001: Failed to open database");
     conn.execute(
         "CREATE TABLE IF NOT EXISTS peers (id INTEGER NOT NULL PRIMARY KEY, ip TEXT NOT NULL, username TEXT NOT NULL)",
         (),
-    ).expect("Err 0924: Failed to create peers table");
+    ).expect("Err 2002: Failed to create peers table");
     conn.execute(
         "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, time INTEGER NOT NULL, data TEXT NOT NULL, sender INTEGER REFERENCES peers(id))",
         (),
-    ).expect("Err 0923: Failed to create messages table");
+    ).expect("Err 2003: Failed to create messages table");
     //The user is inserted as a peer so messages typed can also be saved
     if !database_exists {
-        conn.execute("INSERT INTO peers (id, ip, username) VALUES (?1, ?2, ?3)", (0, "/ip4/127.0.0.1/tcp/0", username)).expect("Err 0923: Failed to store user as a peer");
+        conn.execute("INSERT INTO peers (id, ip, username) VALUES (?1, ?2, ?3)", (0, "/ip4/127.0.0.1/tcp/0", username)).expect("Err 2004: Failed to store user as a peer");
     }
     return conn
 }
@@ -53,29 +53,29 @@ pub fn init_db(access: String, username: &String) -> Connection {
 // Function for storing group chat data (to be read when the app is re-opened)
 pub fn put_message_parts(time: u64, data: String, sender_username: String, conn: &Connection) {
     let mut sender_id:u8 = 0;
-    let mut stmt = conn.prepare("SELECT id FROM peers WHERE username=:username;").expect("Err 8701: Failed to prepare statement");
+    let mut stmt = conn.prepare("SELECT id FROM peers WHERE username=:username;").expect("Err 2005: Failed to prepare statement");
     let _ = stmt.query_map(&[(":username", sender_username.as_str())], |row| {
-        Ok(sender_id = row.get(0).expect("Err 8702: Failed to get ID from row"))
+        Ok(sender_id = row.get(0).expect("Err 2006: Failed to get ID from row"))
     });
     
     conn.execute(
         "INSERT INTO messages (time, data, sender) VALUES (?1, ?2, ?3)",
         (time, data, sender_id),
-    ).expect("Err 0989: Failed to store message");
+    ).expect("Err 2007: Failed to store message");
 }
 
 pub fn put_message_parts_with_id(time: u64, data: String, sender: u8, conn: &Connection) {
     conn.execute(
         "INSERT INTO messages (time, data, sender) VALUES (?1, ?2, ?3)",
         (time, data, sender),
-    ).expect("Err 0989: Failed to store message");
+    ).expect("Err 2008: Failed to store message");
 }
 
 pub fn put_peer_parts(peer_ip: String, peer_username: String, conn: &Connection) {
     conn.execute(
         "INSERT INTO peers (ip, username) VALUES (?1, ?2)",
         (peer_ip, peer_username),
-    ).expect("Err 0909: Failed to store peer");
+    ).expect("Err 2009: Failed to store peer");
 }
 
 // pub fn get_peer_from_ip(peer_ip: String, conn: &Connection) -> String {
@@ -85,9 +85,9 @@ pub fn put_peer_parts(peer_ip: String, peer_username: String, conn: &Connection)
 
 pub fn stop_db (conn: Connection) {
     while conn.is_busy() {
-        println!("Warning: DB is busy, Waiting for 1 seconds, then closing...");
+        println!("Warning: DB is busy, Waiting for 1 second, then closing...");
         std::thread::sleep(std::time::Duration::from_secs(1));
     }
-    conn.close().expect("Err 0011: Failed to close database");
+    conn.close().expect("Err 2010: Failed to close database");
 }
 

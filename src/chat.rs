@@ -61,14 +61,14 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
     // Prompt the user to input a username
     println!("Enter the name for your group:");
     let mut group_name = String::new();
-    std::io::stdin().read_line(&mut group_name).expect("Err 0001: Failed to read name");
+    std::io::stdin().read_line(&mut group_name).expect("Err 1001: Failed to read name");
     group_name = group_name.trim().to_lowercase();
     let access_name = group_name.to_owned();
 
     // Prompt the user to input a username
     println!("Enter a username:");
     let mut users_username = String::new();
-    std::io::stdin().read_line(&mut users_username).expect("Err 0005: Failed to read name");
+    std::io::stdin().read_line(&mut users_username).expect("Err 1002: Failed to read name");
     users_username = users_username.trim().to_lowercase();
     let conn = save::init_db(access_name, &users_username);
     
@@ -83,7 +83,7 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
         .with_behaviour(|key| {
             // To content-address message, we can take the hash of message and use it as an ID.
             let message_id_fn = |message: &gossipsub::Message| {
-                let msg_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).expect("Err 3782: Time went backwards").as_secs();
+                let msg_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).expect("Err 1003: Time went backwards").as_secs();
                 let hash = sha3_256(message.data.as_slice());
                 let (cut_hash, _) = hash.split_at(16);
                 let mut btr_hash = String::new();
@@ -168,7 +168,7 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
                         println!("Publish error: {e:?}");
                     }
                 }
-            put_message_parts_with_id(SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).expect("Err 3782: Time went backwards").as_secs(), line, 0, &conn);    
+            put_message_parts_with_id(SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).expect("Err 1004: Time went backwards").as_secs(), line, 0, &conn);    
             }
             event = swarm.select_next_some() => match event {
                 SwarmEvent::Behaviour(ChatBehaviourEvent::Mdns(mdns::Event::Discovered(list))) => {
@@ -188,7 +188,7 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
                     message_id: id,
                     message,
                 })) => {
-                    let message_str = String::from_utf8(message.data.clone()).expect("Err 1118: Failed conversion from UTF-8 to String");
+                    let message_str = String::from_utf8(message.data.clone()).expect("Err 1005: Failed conversion from UTF-8 to String");
                     let message_parts: Vec<&str> = message_str.splitn(3, "*@").collect();
                     let msg_id = sane_id(id.clone());
                     let (msg_time, recieved_hash) = msg_id.split_at(10);
@@ -200,7 +200,7 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
                         btr_hash.push_str(&num.to_string())
                     }
                     println!("hash: {}", btr_hash);
-                    println!("recived: {recieved_hash}");
+                    println!("received hash: {recieved_hash}");
                     // For First Message
                     // Message_Parts[0] = IP
                     // Message_Parts[1] = Username
@@ -220,15 +220,15 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
                         "Got message: '{}' with id: {id} from: '{}' | peer: {peer_id} at {msg_time}", &message_parts[2], &message_parts[1],);
                         // Add to the database
                         put_peer_parts(message_parts[0].to_string(), message_parts[1].to_string(), &conn);
-                        put_message_parts(msg_time.parse::<u64>().expect("Err 911: Uh Oh... numbers contain letters now"), message_parts[2].to_owned(), message_parts[1].to_owned(), &conn);
+                        put_message_parts(msg_time.parse::<u64>().expect("Err 1006: Letters inside numbers"), message_parts[2].to_owned(), message_parts[1].to_owned(), &conn);
                     } else {                                             
                         // Print the message and its data
-                        let sender = known_peers.get(&message_parts[0].to_string()).expect("Err 0010: Failed to get username");
+                        let sender = known_peers.get(&message_parts[0].to_string()).expect("Err 0010: Failed to find username");
                         println!(
                             "Got message: '{}' with id: {id} from: '{}' | peer: {peer_id} at {msg_time}", &message_parts[1], sender,
                         );
                         // Add to the database
-                        put_message_parts(msg_time.parse::<u64>().expect("Err 911: Uh Oh... numbers contain letters now"), message_str.clone(), sender.to_owned(), &conn);
+                        put_message_parts(msg_time.parse::<u64>().expect("Err 1007: Letters inside numbers"), message_str.clone(), sender.to_owned(), &conn);
                     }
                 },
                 SwarmEvent::NewListenAddr { address, .. } => {
