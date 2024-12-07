@@ -1,6 +1,6 @@
 # Security Policy
 
-## Do not open an issue for a vulnerability
+## DO NOT open an issue for a vulnerability
 
 ## Supported Versions
 
