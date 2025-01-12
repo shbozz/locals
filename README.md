@@ -18,5 +18,3 @@ planned features:
   * once a user receives a post, they can interact with it 
   * if the user interacts with a post, it will be shared 
   * posts can be saved
-
-Notice: This code is mostly a POC, so the error handling is bad and not everything works exactly as intended
