@@ -11,20 +11,38 @@
 // GNU General Public License for more details.
 
 use rusqlite::Connection;
-//use crate::chat::{DBMessage, DBPeer};
-
-// This file is only used to house functions which abstract the operating of our SQLCipher DB
 
 // Open/Create the database and tables for storing data of group chat
 pub fn init_db(access: String, username: &String) -> Connection {
     let database_exists = std::path::Path::new(&(access.clone() + ".dat")).exists();
-    let conn = Connection::open(access + ".dat").expect("Err 2001: Failed to open database");
+    let conn = match Connection::open(access.clone() + ".dat") {
+        Ok(conn) => conn,
+        Err(_) => {
+            println!("Err 2001: Failed to open database \
+                      If {access} is open in another program, close that program and try again. \
+                      What would you like to do? \
+                      1: Exit \
+                      2: Try again \
+                      3: Try again with new database (will remove all existing data)");
+            let mut action = String::new();
+            std::io::stdin().read_line(&mut action).expect("Err 2001: Failed to read your action");
+            match action.trim() {
+                "2" => Connection::open(access.clone() + ".dat").expect("Err 2001: Failed to open database"),
+                "3" => {
+                    std::fs::remove_file(access.clone() + ".dat").expect("Err 2001: Failed to delete database");
+                    Connection::open(access.clone() + ".dat").expect("Err 2001: Failed to open database")
+                },
+                _ => std::process::exit(0),
+            }
+        },
+    };
+
     conn.execute(
         "CREATE TABLE IF NOT EXISTS peers (id INTEGER NOT NULL PRIMARY KEY, ip TEXT NOT NULL, username TEXT NOT NULL)",
         (),
     ).expect("Err 2002: Failed to create peers table");
     conn.execute(
-        "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, time INTEGER NOT NULL, data TEXT NOT NULL, sender INTEGER REFERENCES peers(id))",
+        "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, time INTEGER NOT NULL, data BLOB NOT NULL, sender INTEGER REFERENCES peers(id))",
         (),
     ).expect("Err 2003: Failed to create messages table");
     //The user is inserted as a peer so messages typed can also be saved
@@ -34,52 +52,66 @@ pub fn init_db(access: String, username: &String) -> Connection {
     return conn
 }
 
-
-// pub fn put_message(message: DBMessage, conn: Connection) {
-//     conn.execute(
-//         "INSERT INTO message (time, data, sender) VALUES (?1, ?2, ?3)",
-//         (&message.time, &message.data, &message.sender_db_id),
-//     ).expect("Err 0989: Failed to store message");
-// }
-//
-// // Function for storing data about peers (to be read when the app is re-opened)
-// pub fn put_peer(peer: DBPeer, conn: Connection) {
-//     conn.execute(
-//         "INSERT INTO peers (ip, username) VALUES (?1, ?2)",
-//         (&peer.ip, &peer.username),
-//     ).expect("Err 0909: Failed to store peer");
-// }
-
 // Function for storing group chat data (to be read when the app is re-opened)
 pub fn put_message_parts(time: u64, data: String, sender_username: String, conn: &Connection) {
     let mut sender_id:u8 = 0;
     let mut stmt = conn.prepare("SELECT id FROM peers WHERE username=:username;").expect("Err 2005: Failed to prepare statement");
     let _ = stmt.query_map(&[(":username", sender_username.as_str())], |row| {
-        Ok(sender_id = row.get(0).expect("Err 2006: Failed to get ID from row"))
+        Ok(sender_id = row.get(0)?)
     });
     
-    conn.execute(
+    match conn.execute(
         "INSERT INTO messages (time, data, sender) VALUES (?1, ?2, ?3)",
-        (time, data, sender_id),
-    ).expect("Err 2007: Failed to store message");
+        (time, data.clone(), sender_id),
+    ) {
+        Ok(_) => {},
+        Err(_) => {
+            println!("Err 2007: Failed to store message, Trying again");
+            std::thread::sleep(std::time::Duration::from_millis(500));
+            conn.execute(
+                "INSERT INTO messages (time, data, sender) VALUES (?1, ?2, ?3)",
+                (time, data, sender_id),
+            ).expect("Err 2007: Failed to store message after retrying");
+        }
+    }
 }
 
 pub fn put_message_parts_with_id(time: u64, data: String, sender: u8, conn: &Connection) {
-    conn.execute(
+    match conn.execute(
         "INSERT INTO messages (time, data, sender) VALUES (?1, ?2, ?3)",
-        (time, data, sender),
-    ).expect("Err 2008: Failed to store message");
+        (time, data.clone(), sender),
+    ) {
+        Ok(_) => {},
+        Err(_) => {
+            println!("Err 2008: Failed to store message, Trying again");
+            std::thread::sleep(std::time::Duration::from_millis(500));
+            conn.execute(
+                "INSERT INTO messages (time, data, sender) VALUES (?1, ?2, ?3)",
+                (time, data, sender),
+            ).expect("Err 2008: Failed to store message after retrying");
+        }
+    }
 }
 
 pub fn put_peer_parts(peer_ip: String, peer_username: String, conn: &Connection) {
-    conn.execute(
+    match conn.execute(
         "INSERT INTO peers (ip, username) VALUES (?1, ?2)",
-        (peer_ip, peer_username),
-    ).expect("Err 2009: Failed to store peer");
+        (peer_ip.clone(), peer_username.clone()),
+    ) {
+        Ok(_) => {},
+        Err(_) => {
+            println!("Err 2007: Failed to peer message, Trying again");
+            std::thread::sleep(std::time::Duration::from_millis(500));
+            conn.execute(
+                "INSERT INTO peers (ip, username) VALUES (?1, ?2)",
+                (peer_ip, peer_username),
+            ).expect("Err 2009: Failed to store peet after retrying");
+        }
+    }
 }
 
 // pub fn get_peer_from_ip(peer_ip: String, conn: &Connection) -> String {
-//     let username = conn.execute("SELECT username FROM peers WHERE ip = (?1)", [peer_ip]).expect("Err 5909: Failed to get peer username").to_string();
+//     let username = conn.execute("SELECT username FROM peers WHERE ip = (?1)", [peer_ip]).expect("Err ?: Failed to get peer username").to_string();
 //     return username
 // }
 
@@ -90,4 +122,3 @@ pub fn stop_db (conn: Connection) {
     }
     conn.close().expect("Err 2010: Failed to close database");
 }
-

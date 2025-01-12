@@ -16,7 +16,6 @@ mod chat;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let err = chat::chat();
     let fmterr: String = format!("{:?}", err);
-    println!("{}", fmterr);
-    println!("Bye!");
+    println!("Error: {}", fmterr);
     Ok(())
 }

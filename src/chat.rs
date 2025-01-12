@@ -19,7 +19,6 @@ use std::time::{Duration, SystemTime};
 use tokio::{io, io::AsyncBufReadExt, select};
 use tracing_subscriber::EnvFilter;
 use std::collections::HashMap;
-use std::process::exit;
 use libp2p::gossipsub::MessageId;
 use sha3_rust::sha3_256;
 use crate::chat::save::{put_message_parts, put_message_parts_with_id, put_peer_parts, stop_db};
@@ -30,19 +29,6 @@ struct ChatBehaviour {
     gossipsub: gossipsub::Behaviour,
     mdns: mdns::tokio::Behaviour,
 }
-
-// Once what was a worthy struct will now not be used
-
-// struct DBMessage {
-//     time: u64,
-//     data: String,
-//     sender_db_id: u8,
-// }
-// 
-// struct DBPeer {
-//     ip: String,
-//     username: String,
-// }
 
 pub fn sane_id(id: MessageId) -> String {
     let mut s = format!("{}", id);
@@ -137,7 +123,7 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
     let mut firstmsg = true;
     if swarm.external_addresses().next().is_none() {
         addr = "/ip4/127.0.0.1/tcp/0".to_owned();
-    } else { 
+    } else {
         addr = swarm.external_addresses().next().unwrap().to_string();
     }
     loop {
@@ -154,7 +140,7 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
                     }
                 } else if line == "q" {
                     stop_db(conn);
-                    exit(0);
+                    std::process::exit(0);
                 } else {
                     if swarm.external_addresses().next().is_none() {
                         addr = "/ip4/127.0.0.1/tcp/0".to_owned();
@@ -188,10 +174,17 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
                     message_id: id,
                     message,
                 })) => {
-                    let message_str = String::from_utf8(message.data.clone()).expect("Err 1005: Failed conversion from UTF-8 to String");
+                    let message_str = match String::from_utf8(message.data.clone()) {
+                        Ok(s) => s,
+                        Err(e) => {
+                            println!("Err 1005: Failed conversion from UTF-8 to String \
+                              The message will be ignored.");
+                            return Err(e.into());
+                        },
+                    };
                     let message_parts: Vec<&str> = message_str.splitn(3, "*@").collect();
                     let msg_id = sane_id(id.clone());
-                    let (msg_time, recieved_hash) = msg_id.split_at(10);
+                    let (msg_time, received_hash) = msg_id.split_at(10);
                     
                     let hash = sha3_256(message.data.as_slice());
                     let (cut_hash, _) = hash.split_at(16);
@@ -199,8 +192,13 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
                     for num in cut_hash {
                         btr_hash.push_str(&num.to_string())
                     }
-                    println!("hash: {}", btr_hash);
-                    println!("received hash: {recieved_hash}");
+                    if btr_hash != received_hash {
+                        println!("Warning: The hash that was received of the message is incorrect. \
+                                  The message may have been tampered with.");
+                        println!("hash: {}", btr_hash);
+                        println!("received hash: {received_hash}");
+                    }
+
                     // For First Message
                     // Message_Parts[0] = IP
                     // Message_Parts[1] = Username
@@ -223,12 +221,12 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
                         put_message_parts(msg_time.parse::<u64>().expect("Err 1006: Letters inside numbers"), message_parts[2].to_owned(), message_parts[1].to_owned(), &conn);
                     } else {                                             
                         // Print the message and its data
-                        let sender = known_peers.get(&message_parts[0].to_string()).expect("Err 0010: Failed to find username");
+                        let sender = known_peers.get(&message_parts[0].to_string()).expect("Err 0007: Failed to find username");
                         println!(
                             "Got message: '{}' with id: {id} from: '{}' | peer: {peer_id} at {msg_time}", &message_parts[1], sender,
                         );
                         // Add to the database
-                        put_message_parts(msg_time.parse::<u64>().expect("Err 1007: Letters inside numbers"), message_str.clone(), sender.to_owned(), &conn);
+                        put_message_parts(msg_time.parse::<u64>().expect("Err 1008: Letters inside numbers"), message_str.clone(), sender.to_owned(), &conn);
                     }
                 },
                 SwarmEvent::NewListenAddr { address, .. } => {
@@ -238,4 +236,4 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
             }
         }
     }
-}
+    }
