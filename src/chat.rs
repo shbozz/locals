@@ -215,7 +215,7 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
 
                         // Print the message and its data
                         println!(
-                        "Got message: '{}' with id: {id} from: '{}' | peer: {peer_id} at {msg_time}", &message_parts[2], &message_parts[1],);
+                        "Got message: '{}' with id: {msg_id} from: '{}' | peer: {peer_id} at {msg_time}", &message_parts[2], &message_parts[1],);
                         // Add to the database
                         put_peer_parts(message_parts[0].to_string(), message_parts[1].to_string(), &conn);
                         put_message_parts(msg_time.parse::<u64>().expect("Err 1006: Letters inside numbers"), message_parts[2].to_owned(), message_parts[1].to_owned(), &conn);
@@ -223,7 +223,7 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
                         // Print the message and its data
                         let sender = known_peers.get(&message_parts[0].to_string()).expect("Err 0007: Failed to find username");
                         println!(
-                            "Got message: '{}' with id: {id} from: '{}' | peer: {peer_id} at {msg_time}", &message_parts[1], sender,
+                            "Got message: '{}' with id: {msg_id} from: '{}' | peer: {peer_id} at {msg_time}", &message_parts[1], sender,
                         );
                         // Add to the database
                         put_message_parts(msg_time.parse::<u64>().expect("Err 1008: Letters inside numbers"), message_str.clone(), sender.to_owned(), &conn);
