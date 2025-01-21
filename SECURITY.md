@@ -4,7 +4,7 @@
 
 ## Supported Versions
 
-The app is in pre-alhpa so vulnerabilities are fixed in the next versions
+The app is in pre-alpha so vulnerabilities are fixed in the next versions
 
 ## Reporting a Vulnerability
 
