@@ -10,6 +10,6 @@ tokio = { version = "1.40.0", features = ["full"] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 futures = "0.3.30"
 tracing = "0.1.40"
-libp2p = { version = "0.54.1", features = [ "tokio", "gossipsub", "mdns", "noise", "macros", "tcp", "yamux", "quic"] }
-rusqlite = { version = "0.32.1", features = ["sqlcipher"] }
+libp2p = { version = "0.55.0", features = [ "tokio", "gossipsub", "mdns", "noise", "macros", "tcp", "yamux", "quic"] }
+rusqlite = { version = "0.33.0", features = ["sqlcipher"] }
 sha3-rust = "0.1.1"
