@@ -1,4 +1,4 @@
-// Copyright 2024 Shbozz.
+// Copyright 2025 Shbozz.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,21 +19,10 @@ pub fn init_db(access: String, username: &String) -> Connection {
         Ok(conn) => conn,
         Err(_) => {
             println!("Err 2001: Failed to open database \
-                      If {access} is open in another program, close that program and try again. \
-                      What would you like to do? \
-                      1: Exit \
-                      2: Try again \
-                      3: Try again with new database (will remove all existing data)");
-            let mut action = String::new();
-            std::io::stdin().read_line(&mut action).expect("Err 2001: Failed to read your action");
-            match action.trim() {
-                "2" => Connection::open(access.clone() + ".dat").expect("Err 2001: Failed to open database"),
-                "3" => {
-                    std::fs::remove_file(access.clone() + ".dat").expect("Err 2001: Failed to delete database");
-                    Connection::open(access.clone() + ".dat").expect("Err 2001: Failed to open database")
-                },
-                _ => std::process::exit(0),
-            }
+                      If {access} is open in another program, close that program.\
+                      Trying again in 10 seconds");
+            std::thread::sleep(std::time::Duration::from_secs(10));
+            Connection::open(access.clone() + ".dat").expect("Err 2001: Failed to open database after retrying")
         },
     };
 
@@ -100,12 +89,12 @@ pub fn put_peer_parts(peer_ip: String, peer_username: String, conn: &Connection)
     ) {
         Ok(_) => {},
         Err(_) => {
-            println!("Err 2007: Failed to peer message, Trying again");
+            println!("Err 2007: Failed to store peer data, Trying again");
             std::thread::sleep(std::time::Duration::from_millis(500));
             conn.execute(
                 "INSERT INTO peers (ip, username) VALUES (?1, ?2)",
                 (peer_ip, peer_username),
-            ).expect("Err 2009: Failed to store peet after retrying");
+            ).expect("Err 2009: Failed to store peer data after retrying");
         }
     }
 }

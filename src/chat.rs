@@ -1,4 +1,4 @@
-// Copyright 2024 Shbozz.
+// Copyright 2025 Shbozz.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -176,10 +176,10 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
                 })) => {
                     let message_str = match String::from_utf8(message.data.clone()) {
                         Ok(s) => s,
-                        Err(e) => {
+                        Err(_) => {
                             println!("Err 1005: Failed conversion from UTF-8 to String \
-                              The message will be ignored.");
-                            return Err(e.into());
+                              Using lossy conversion");
+                            String::from_utf8_lossy(&message.data.clone()).to_string()
                         },
                     };
                     let message_parts: Vec<&str> = message_str.splitn(3, "*@").collect();
@@ -193,7 +193,7 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
                         btr_hash.push_str(&num.to_string())
                     }
                     if btr_hash != received_hash {
-                        println!("Warning: The hash that was received of the message is incorrect. \
+                        println!("Warning: The hash of the message that was received is incorrect. \
                                   The message may have been tampered with.");
                         println!("hash: {}", btr_hash);
                         println!("received hash: {received_hash}");
@@ -218,7 +218,7 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
                         "Got message: '{}' with id: {msg_id} from: '{}' | peer: {peer_id} at {msg_time}", &message_parts[2], &message_parts[1],);
                         // Add to the database
                         put_peer_parts(message_parts[0].to_string(), message_parts[1].to_string(), &conn);
-                        put_message_parts(msg_time.parse::<u64>().expect("Err 1006: Letters inside numbers"), message_parts[2].to_owned(), message_parts[1].to_owned(), &conn);
+                        put_message_parts(msg_time.parse::<u64>().expect("Err 1006: Letters inside of numbers"), message_parts[2].to_owned(), message_parts[1].to_owned(), &conn);
                     } else {                                             
                         // Print the message and its data
                         let sender = known_peers.get(&message_parts[0].to_string()).expect("Err 0007: Failed to find username");
@@ -226,7 +226,7 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
                             "Got message: '{}' with id: {msg_id} from: '{}' | peer: {peer_id} at {msg_time}", &message_parts[1], sender,
                         );
                         // Add to the database
-                        put_message_parts(msg_time.parse::<u64>().expect("Err 1008: Letters inside numbers"), message_str.clone(), sender.to_owned(), &conn);
+                        put_message_parts(msg_time.parse::<u64>().expect("Err 1008: Letters inside of numbers"), message_str.clone(), sender.to_owned(), &conn);
                     }
                 },
                 SwarmEvent::NewListenAddr { address, .. } => {
