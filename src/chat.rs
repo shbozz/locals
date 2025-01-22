@@ -98,7 +98,6 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
                 mdns::tokio::Behaviour::new(mdns::Config::default(), key.public().to_peer_id())?;
             Ok(ChatBehaviour { gossipsub, mdns })
         })?
-        .with_swarm_config(|c| c.with_idle_connection_timeout(Duration::from_secs(60)))
         .build();
 
     // Create a Gossipsub topic with group name
@@ -115,7 +114,7 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
 
     println!("Enter messages here and they will be sent to connected peers using Gossipsub");
     println!("To quit, type: q \
-              then hit enter.");
+              then press enter.");
     
     // Create variables for chatroom
     let mut addr: String;
@@ -165,7 +164,7 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
                 },
                 SwarmEvent::Behaviour(ChatBehaviourEvent::Mdns(mdns::Event::Expired(list))) => {
                     for (peer_id, _multiaddr) in list {
-                        println!("mDNS discover peer has expired: {peer_id}");
+                        println!("an mDNS peer has expired: {peer_id}");
                         swarm.behaviour_mut().gossipsub.remove_explicit_peer(&peer_id);
                     }
                 },
@@ -236,4 +235,4 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    }
+}

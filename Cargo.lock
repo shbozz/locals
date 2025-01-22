@@ -1732,7 +1732,6 @@ dependencies = [
  "rusqlite",
  "sha3-rust",
  "tokio",
- "tracing",
  "tracing-subscriber",
 ]
 
