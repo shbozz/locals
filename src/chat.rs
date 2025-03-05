@@ -21,7 +21,7 @@ use tracing_subscriber::EnvFilter;
 use std::collections::HashMap;
 use libp2p::gossipsub::MessageId;
 use sha3_rust::sha3_256;
-use crate::chat::save::{put_message_parts, put_message_parts_with_id, put_peer_parts, stop_db};
+use crate::chat::save::{put_message_parts, put_message_parts_with_id, put_peer_parts, read_messages, stop_db};
 
 // We create a custom network behaviour that combines Gossipsub and Mdns.
 #[derive(NetworkBehaviour)]
@@ -56,7 +56,11 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
     let mut users_username = String::new();
     std::io::stdin().read_line(&mut users_username).expect("Err 1002: Failed to read name");
     users_username = users_username.trim().to_lowercase();
-    let conn = save::init_db(access_name, &users_username);
+    let (conn, old_db) = save::init_db(access_name, &users_username);
+    
+    if old_db {
+        read_messages(&conn);
+    }
     
     let mut swarm = libp2p::SwarmBuilder::with_new_identity()
         .with_tokio()
@@ -69,7 +73,7 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
         .with_behaviour(|key| {
             // To content-address message, we can take the hash of message and use it as an ID.
             let message_id_fn = |message: &gossipsub::Message| {
-                let msg_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).expect("Err 1003: Time went backwards").as_secs();
+                let msg_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).expect("Err 1004: Time went backwards").as_secs();
                 let hash = sha3_256(message.data.as_slice());
                 let (cut_hash, _) = hash.split_at(16);
                 let mut btr_hash = String::new();
@@ -114,7 +118,7 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
 
     println!("Enter messages here and they will be sent to connected peers using Gossipsub");
     println!("To quit, type: q \
-              then press enter.");
+              \n then press enter.");
     
     // Create variables for chatroom
     let mut addr: String;
@@ -214,7 +218,7 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
 
                         // Print the message and its data
                         println!(
-                        "Got message: '{}' with id: {msg_id} from: '{}' | peer: {peer_id} at {msg_time}", &message_parts[2], &message_parts[1],);
+                        "'{}' from: '{}' at {msg_time} | peer: {peer_id} id: {msg_id}", &message_parts[2], &message_parts[1],);
                         // Add to the database
                         put_peer_parts(message_parts[0].to_string(), message_parts[1].to_string(), &conn);
                         put_message_parts(msg_time.parse::<u64>().expect("Err 1006: Letters inside of numbers"), message_parts[2].to_owned(), message_parts[1].to_owned(), &conn);
@@ -222,10 +226,10 @@ pub async fn chat() -> Result<(), Box<dyn Error>> {
                         // Print the message and its data
                         let sender = known_peers.get(&message_parts[0].to_string()).expect("Err 0007: Failed to find username");
                         println!(
-                            "Got message: '{}' with id: {msg_id} from: '{}' | peer: {peer_id} at {msg_time}", &message_parts[1], sender,
+                            "'{}' from: '{}' at {msg_time} | peer: {peer_id} with id: {msg_id}", &message_parts[1], sender,
                         );
                         // Add to the database
-                        put_message_parts(msg_time.parse::<u64>().expect("Err 1008: Letters inside of numbers"), message_str.clone(), sender.to_owned(), &conn);
+                        put_message_parts(msg_time.parse::<u64>().expect("Err 1008: Letters inside of numbers"), message_parts[1].to_owned(), sender.to_owned(), &conn);
                     }
                 },
                 SwarmEvent::NewListenAddr { address, .. } => {
