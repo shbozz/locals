@@ -19,4 +19,4 @@ Planned Features:
   * if the user interacts with a post, it will be shared 
   * posts can be saved
 
-The app is in Alpha (not ready for use), so all of the code is on the [dev](https://github.com/shbozz/locals/tree/dev) branch
+The app is in Alpha (not ready for use), so all of the code is on the [dev](https://github.com/shbozz/locals/tree/dev-flutter) branches
