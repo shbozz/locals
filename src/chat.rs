@@ -21,7 +21,7 @@ use tracing_subscriber::EnvFilter;
 use std::collections::HashMap;
 use libp2p::gossipsub::MessageId;
 use sha3_rust::sha3_256;
-use crate::chat::save::{put_message_parts, put_message_parts_with_id, put_peer_parts, read_messages, stop_db};
+use crate::chat::save::*;
 
 // We create a custom network behaviour that combines Gossipsub and Mdns.
 #[derive(NetworkBehaviour)]
