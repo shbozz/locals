@@ -122,7 +122,6 @@ pub fn read_messages(conn: &Connection) {
         while id_increment < last_id {
             let _ = stmt.query_row(&[(":id", &id_increment.to_string())], |row| {
                 data = row.get(1)?; username = row.get(2)?; time = row.get(0)?;
-                println!("sender{}",row.get::<_, String>(2)?.as_str());
                 Ok(())
             });
             println!("'{}' from: '{}' at {} | #{id_increment}", data, username, time);
@@ -134,7 +133,6 @@ pub fn read_messages(conn: &Connection) {
         while id_increment <= last_id {
             let _ = stmt.query_row(&[(":id", &id_increment.to_string())], |row| {
                 data = row.get(1)?; username = row.get(2)?; time = row.get(0)?;
-                println!("sender{}",row.get::<_, String>(2)?.as_str());
                 Ok(())
             });
             println!("'{}' from: '{}' at {} | #{id_increment}", data, username, time);
